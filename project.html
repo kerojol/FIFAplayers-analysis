@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FIFA Players Visualization</title>
+    <style>
+        /* CSS styles for the bar chart */
+        .bar {
+            fill: steelblue;
+        }
+
+        .bar:hover {
+            fill: orange;
+        }
+
+        .axis {
+            font-size: 12px;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+
+        /* CSS styles for the tooltip */
+        .d3-tip {
+            line-height: 1;
+            font-weight: bold;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 2px;
+        }
+		
+		/* CSS styles for the title */
+        .chart-title {
+            font-family: Arial, sans-serif;
+			font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>FIFA Players Visualization</h1>
+    <label for="teamSelect">Select Team:</label>
+    <select id="teamSelect"></select>
+    <div id="chart"></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.9.1/d3-tip.min.js"></script>
+    <script>
+        // Function to update the chart with the loaded data
+        function updateChart(data) {
+            const teams = [...new Set(data.map(d => d.Team))];
+
+            // Populate team select dropdown
+            const teamSelect = d3.select("#teamSelect");
+            teamSelect.selectAll("option")
+                .data(teams)
+                .enter()
+                .append("option")
+                .text(d => d);
+
+            // Function to update the bar chart based on selected team
+            function updateBarChart(selectedTeam) {
+                const filteredData = data.filter(d => d.Team === selectedTeam);
+                filteredData.sort((a, b) => d3.descending(+a.Overall_Rating, +b.Overall_Rating));
+                const top20Players = filteredData.slice(0, 20);
+                const maxRating = d3.max(top20Players, d => +d.Overall_Rating);
+
+                const xScale = d3.scaleBand()
+                    .domain(top20Players.map(d => d.Name))
+                    .range([30, 800])
+                    .padding(0.2);
+
+                const yScale = d3.scaleLinear()
+                    .domain([0, maxRating])
+                    .range([400, 80]);
+
+                const chart = d3.select("#chart");
+                chart.selectAll("svg").remove();
+
+                const svg = chart.append("svg")
+                    .attr("width", 1000)
+                    .attr("height", 550);
+					
+				svg.append("text")
+                    .attr("x", 400)
+                    .attr("y", 40)
+                    .attr("text-anchor", "middle")
+                    .attr("class", "chart-title")
+                    .text("Top 20 Rated Players and Potential");
+
+                const tooltip = d3.select("body")
+					.append("div")
+					.attr("class", "tooltip")
+					.style("position", "absolute")
+					.style("pointer-events", "none")
+					.style("font-size", "12px")
+					.style("padding", "8px")
+					.style("background-color", "#fff")
+					.style("border", "1px solid #ccc")
+					.style("box-shadow", "2px 2px 4px rgba(0, 0, 0, 0.2)")
+					.style("opacity", "0")
+					.style("transition", "opacity 0.3s ease");
+
+				const bars = svg.selectAll("rect")
+					.data(top20Players)
+					.enter()
+					.append("rect")
+					.attr("class", "bar")
+					.attr("x", d => xScale(d.Name))
+					.attr("y", d => yScale(+d.Overall_Rating))
+					.attr("width", xScale.bandwidth())
+					.attr("height", d => 400 - yScale(+d.Overall_Rating))
+					.on("mouseover", function (event, d) {
+						tooltip.style("opacity", "1")
+							.html(`<strong>Name:</strong> ${d.Name}<br><strong>Overall Rating:</strong> ${d.Overall_Rating}<br><strong>Potential:</strong> ${d.Potential}`)
+							.style("left", (event.pageX) + "px")
+							.style("top", (event.pageY - 28) + "px");
+					})
+					.on("mouseout", function () {
+						tooltip.style("opacity", "0");
+					});
+
+                const xAxis = d3.axisBottom(xScale);
+                svg.append("g")
+                    .attr("transform", "translate(0, 400)")
+                    .call(xAxis)
+                    .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .style("text-anchor", "end");
+
+                const yAxis = d3.axisLeft(yScale);
+                svg.append("g")
+                    .attr("transform", "translate(20, 0)")
+                    .call(yAxis);
+
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", -50)
+                    .attr("x", -200)
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .text("Overall Rating");
+
+                // Generate line path data
+                const line = d3.line()
+                    .x(d => xScale(d.Name) + xScale.bandwidth() / 2)
+                    .y(d => yScale(+d.Potential));
+
+                // Append line path
+                svg.append("path")
+                    .datum(top20Players)
+                    .attr("class", "potential-line")
+                    .attr("d", line)
+                    .attr("fill", "none")
+                    .attr("stroke", "yellow")
+                    .attr("stroke-width", 2);
+            }
+
+            // Event listener for team select dropdown
+            teamSelect.on("change", function () {
+                const selectedTeam = this.value;
+                updateBarChart(selectedTeam);
+            });
+
+            // Initialize the chart with the default selected team
+            const defaultTeam = teams[0];
+            teamSelect.property("value", defaultTeam);
+            updateBarChart(defaultTeam);
+        }
+
+        // Load the CSV file and process the data
+        d3.csv("fifa.csv").then(function (data) {
+            // Convert numerical columns to numbers if needed
+            data.forEach(function (d) {
+                d.Overall_Rating = +d.Overall_Rating;
+                d.Potential = +d.Potential;
+            });
+
+            // Call the updateChart function with the loaded data
+            updateChart(data);
+        }).catch(function (error) {
+            console.log(error);
+        });
+    </script>
+</body>
+</html>

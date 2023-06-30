@@ -1,0 +1,64 @@
+/* Add any custom styling here */
+html, body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: beige;
+    margin: 0;
+    padding: 0;
+}
+
+.containerr {
+    text-align: center;
+    outline: solid black;
+    padding: 0;
+    background-color: burlywood;
+}
+
+#mapContainer {
+    background-color: lightgray;
+    width: 1000px;
+    height: 650px;
+    
+}
+
+div.containerr h1 {
+    text-align: center;
+    outline: solid brown;
+    color: brown;
+    background-color:beige;
+    margin: 0;
+    font-family: monospace;
+    
+}
+figure.logo img{
+    width: 450px;
+    height: 160px;
+
+}
+
+.legend-title{
+    font-size: 15px;
+}
+
+.legend-label{
+    font-size: 12px;
+}
+
+div.img {
+    background-color:burlywood;
+    padding: 0%;
+}
+
+button.gotomap {
+    background-color:burlywood;
+    width: 100%;
+}
+
+button.gotomap a {
+    color: brown;
+}
